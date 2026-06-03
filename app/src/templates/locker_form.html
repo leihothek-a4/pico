@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}New locker{% endblock %}
+{% block content %}
+    <h1>New locker</h1>
+    <form method="post">
+        <label for="ip">
+            IP address <small>(optional)</small>
+        </label>
+        <input type="text"
+               id="ip"
+               name="ip"
+               placeholder="192.168.1.42"
+               value="{{ ip or '' }}">
+        <p>
+            <button type="submit">Create</button>
+            <a href="{{ url_for("mainpage") }}">Cancel</a>
+        </p>
+    </form>
+{% endblock %}
