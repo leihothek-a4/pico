@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            {% block title %}Leihothek{% endblock %}
+        </title>
+        <style>
+            body {
+                max-width: 40rem;
+                margin: 1rem auto;
+                padding: 0 1rem;
+            }
+            label {
+                display: block;
+                margin-top: 0.5rem;
+            }
+            input[type="text"] {
+                width: 100%;
+            }
+            .locker,
+            .item {
+                margin-left: 1rem;
+            }
+        </style>
+        {% block head %}{% endblock %}
+    </head>
+    <body>
+        <p>
+            <a href="{{ url_for("mainpage") }}">Lockers</a> ·
+            <a href="{{ url_for("new_locker") }}">+ locker</a>
+        </p>
+        {% with messages = get_flashed_messages() %}
+            {% for message in messages
+                %}
+                <p>
+                    <em>{{ message }}</em>
+                </p>
+            {% endfor %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </body>
+</html>

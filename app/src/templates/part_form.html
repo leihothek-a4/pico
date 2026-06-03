@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Add part{% endblock %}
+{% block content %}
+    <h1>Add part to "{{ item.name }}"</h1>
+    <p>
+        <small>Locker {{ locker.id }}, item {{ item.id }}</small>
+    </p>
+    <form method="post">
+        <label for="name">Part name</label>
+        <input type="text" id="name" name="name" required value="{{ name or '' }}">
+        <label for="uid">
+            NFC UID <small>(optional, e.g. A7 A0 C8 01)</small>
+        </label>
+        <input type="text" id="uid" name="uid" value="{{ uid or '' }}">
+        <p>
+            <button type="submit">Add</button>
+            <a href="{{ url_for("mainpage") }}">Cancel</a>
+        </p>
+    </form>
+{% endblock %}
