@@ -1,4 +1,5 @@
-please use 'djlint' for formatiing of the ninja2 code
+please use 'djlint' for formating of the ninja2 code
+
 
 usage:
 ```

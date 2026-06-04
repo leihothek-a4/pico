@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+    <h1>Login</h1>
+    {% if config_error %}
+        <p><em>GitHub login is not configured (set GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_ALLOWED_USERS).</em></p>
+    {% elif denied %}
+        <p><em>Account <strong>{{ github_user }}</strong> is not allowed to use this site.</em></p>
+        <p><a href="{{ url_for('auth.login') }}">Try another account</a></p>
+    {% elif error %}
+        <p><em>{{ error }}</em></p>
+        <p><a href="{{ url_for('auth.login') }}">Try again</a></p>
+    {% else %}
+        <p><a href="{{ url_for('auth.login') }}">Login with GitHub</a></p>
+    {% endif %}
+{% endblock %}
