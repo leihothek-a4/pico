@@ -6,8 +6,11 @@ class Locker(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     ip = db.Column(db.String(50), nullable=True, index=True)
+    device_uid = db.Column(db.String(64), nullable=True, unique=True, index=True)
+    locker_id = db.Column(db.String(64), nullable=True, unique=True, index=True)
+    name = db.Column(db.String(120), nullable=True)
     intended_items = db.relationship(
-        "Item", backref="item", lazy="dynamic", cascade="all, delete-orphan"
+        "Item", backref="locker_ref", lazy="dynamic", cascade="all, delete-orphan"
     )
 
 
@@ -18,7 +21,7 @@ class Item(db.Model):
     locker = db.Column(db.Integer, db.ForeignKey("locker.id"), nullable=True)
     name = db.Column(db.Text)
     parts = db.relationship(
-        "Part", backref="part", lazy="dynamic", cascade="all, delete-orphan"
+        "Part", backref="item_ref", lazy="dynamic", cascade="all, delete-orphan"
     )
 
     def __init__(self, locker: Locker | int | None = None, name: str = "Locker"):

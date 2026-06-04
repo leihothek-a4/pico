@@ -14,11 +14,15 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + path.join(basedir, "data.
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
+app.register_blueprint(api_bp)
 app.register_blueprint(auth_bp)
 register_auth_guard(app)
 
 with app.app_context():
     db.create_all()
+    from api_routes import ensure_locker_columns
+
+    ensure_locker_columns()
 
 
 def parse_uid(raw: str) -> bytes | None:
