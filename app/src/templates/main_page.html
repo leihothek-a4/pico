@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Lockers{% endblock %}
+{% block content %}
+    <h1>Lockers</h1>
+    {% if not lockers %}
+        <p>
+            <em>No lockers yet.</em> <a href="{{ url_for("new_locker") }}">Create one</a>
+        </p>
+    {% endif %}
+    {% for locker in lockers %}
+        <details>
+            <summary>
+                Locker {{ locker.id }}
+                {% if locker.ip %}({{ locker.ip }}){% endif %}
+                <a href="{{ url_for('new_item', locker_id=locker.id) }}">+ item</a>
+            </summary>
+            <div class="locker">
+                {% if locker.intended_items.count() == 0 %}
+                    <p>
+                        <em>No items.</em> <a href="{{ url_for('new_item', locker_id=locker.id) }}">Add one</a>
+                    </p>
+                {% endif %}
+                {% for item in locker.intended_items %}
+                    <details>
+                        <summary>
+                            {{ item.name }}
+                            <a href="{{ url_for('new_part', item_id=item.id) }}">+ part</a>
+                        </summary>
+                        <div class="item">
+                            {% if item.parts.count() == 0 %}
+                                <p>
+                                    <em>No parts.</em> <a href="{{ url_for('new_part', item_id=item.id) }}">Add one</a>
+                                </p>
+                            {% endif %}
+                            {% for part in item.parts %}
+                                <p>
+                                    {{ part.name }}
+                                    {% if part.uid %}<small>({{ part.uid.hex(" ") }})</small>{% endif %}
+                                </p>
+                            {% endfor %}
+                        </div>
+                    </details>
+                {% endfor %}
+            </div>
+        </details>
+    {% endfor %}
+{% endblock %}

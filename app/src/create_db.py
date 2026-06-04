@@ -1,5 +1,5 @@
-from db import *
 from app import app, db
+from db import Item, Locker, Part
 
 with app.app_context():
     db.create_all()
@@ -13,8 +13,8 @@ with app.app_context():
     db.session.add(miniTableTennisSet)
     db.session.commit()
 
-    batton0 = Part(miniTableTennisSet, "batton", bytes([0xa7, 0xa0, 0xc8, 0x01]))
-    batton1 = Part(miniTableTennisSet, "batton", bytes([0xb5, 0x4c, 0xb6, 0x02]))
+    batton0 = Part(miniTableTennisSet, "batton", bytes([0xA7, 0xA0, 0xC8, 0x01]))
+    batton1 = Part(miniTableTennisSet, "batton", bytes([0xB5, 0x4C, 0xB6, 0x02]))
     net = Part(miniTableTennisSet, "net", None)
 
     db.session.add_all([batton0, batton1, net])

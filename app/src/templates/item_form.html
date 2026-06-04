@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}New item{% endblock %}
+{% block
+    content %}
+    <h1>New item in locker {{ locker.id }}</h1>
+    <form method="post" id="item-form">
+        <label for="name">Item name</label>
+        <input type="text" id="name" name="name" required value="{{ name or '' }}" />
+        <label>
+            Parts <small>(optional — Enter to add)</small>
+        </label>
+        <div id="parts-list"></div>
+        <p>
+            <input type="text" id="part-input" placeholder="Part name" />
+            <button type="button" id="add-part-btn">+ part</button>
+        </p>
+        <p>
+            <button type="submit">Create</button>
+            <a href="{{ url_for("mainpage") }}">Cancel</a>
+        </p>
+    </form>
+{% endblock %}
+{% block head %}
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const list = document.getElementById("parts-list");
+        const input = document.getElementById("part-input");
+
+        function addPart(name) {
+            name = name.trim();
+            if (!name) return;
+
+            const row = document.createElement("p");
+            row.textContent = name + " ";
+
+            const hidden = document.createElement("input");
+            hidden.type = "hidden";
+            hidden.name = "part_names";
+            hidden.value = name;
+
+            const remove = document.createElement("button");
+            remove.type = "button";
+            remove.textContent = "×";
+            remove.addEventListener("click", () => row.remove());
+
+            row.prepend(hidden);
+            row.appendChild(remove);
+            list.appendChild(row);
+            input.value = "";
+            input.focus();
+        }
+
+        document
+            .getElementById("add-part-btn")
+            .addEventListener("click", () => addPart(input.value));
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                addPart(input.value);
+            }
+        });
+    });
+    </script>
+{% endblock %}
