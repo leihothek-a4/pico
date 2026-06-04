@@ -1,18 +1,21 @@
-from os import path
+from os import environ, path
 
-from flask import Flask, flash, redirect, render_template, request, url_for
-
+from api_routes import api_bp
+from auth_routes import auth_bp, register_auth_guard
 from db import Item, Locker, Part
 from extensions import db
+from flask import Flask, flash, redirect, render_template, request, url_for
 
 basedir = path.abspath(path.dirname(__file__))
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "Ini0w91JO0209hcnol"
+app.config["SECRET_KEY"] = environ.get("SECRET_KEY", "default-secret-key")
 
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + path.join(basedir, "data.sqlite")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
+app.register_blueprint(auth_bp)
+register_auth_guard(app)
 
 with app.app_context():
     db.create_all()
@@ -60,7 +63,9 @@ def new_item(locker_id):
         db.session.add(item)
         db.session.flush()
 
-        part_names = [n.strip() for n in request.form.getlist("part_names") if n.strip()]
+        part_names = [
+            n.strip() for n in request.form.getlist("part_names") if n.strip()
+        ]
         for part_name in part_names:
             db.session.add(Part(item, part_name, None))
 
