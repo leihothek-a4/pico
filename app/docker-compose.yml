@@ -1,0 +1,18 @@
+services:
+  pico-app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      DATABASE_PATH: /app/data/data.sqlite
+      API_KEY: ${API_KEY:-change-me}
+      SECRET_KEY: ${SECRET_KEY:-change-me}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GITHUB_ALLOWED_USERS: ${GITHUB_ALLOWED_USERS:-}
+    volumes:
+      - pico-app-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  pico-app-data:

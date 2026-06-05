@@ -1,23 +1,28 @@
 {% extends "base.html" %}
-{% block title %}Add part{% endblock %}
+{% block title %}{{ submit_label or "Save" }} part{% endblock %}
 {% block content %}
-    <h1>Add part to "{{ item.name }}"</h1>
+    <h1>{{ submit_label or "Save" }} part{% if part %} "{{ part.name }}"{% endif %}</h1>
     <p>
-<<<<<<< Updated upstream
-        <small>Locker {{ locker.id }}, item {{ item.id }}</small>
-=======
         <small>{% if locker %}Locker {{ locker.id }}, {% endif %}item {{ item.name }}</small>
->>>>>>> Stashed changes
     </p>
     <form method="post">
         <label for="name">Part name</label>
         <input type="text" id="name" name="name" required value="{{ name or '' }}">
         <label for="uid">
-            NFC UID <small>(optional, e.g. A7 A0 C8 01)</small>
+            RFID / NFC UID
+            <small>(4–10 bytes hex, e.g. A7 A0 C8 01 — used by the Pico reader)</small>
         </label>
-        <input type="text" id="uid" name="uid" value="{{ uid or '' }}">
+        <input
+            type="text"
+            id="uid"
+            name="uid"
+            value="{{ uid or '' }}"
+            placeholder="A7 A0 C8 01"
+            autocomplete="off"
+            spellcheck="false"
+        >
         <p>
-            <button type="submit">Add</button>
+            <button type="submit">{{ submit_label or "Save" }}</button>
             <a href="{{ url_for("mainpage") }}">Cancel</a>
         </p>
     </form>

@@ -1,19 +1,24 @@
 {% extends "base.html" %}
 {% block title %}New item{% endblock %}
-{% block
-    content %}
+{% block content %}
     <h1>New item in locker {{ locker.id }}</h1>
+    <script id="part-rows-data" type="application/json">{{ part_rows | tojson }}</script>
     <form method="post" id="item-form">
         <label for="name">Item name</label>
         <input type="text" id="name" name="name" required value="{{ name or '' }}" />
-        <label>
-            Parts <small>(optional — Enter to add)</small>
-        </label>
+        <label>Parts <small>(optional)</small></label>
         <div id="parts-list"></div>
-        <p>
-            <input type="text" id="part-input" placeholder="Part name" />
+        <div class="part-add-row">
+            <input type="text" id="part-name-input" placeholder="Part name" />
+            <input
+                type="text"
+                id="part-uid-input"
+                placeholder="RFID UID (optional)"
+                autocomplete="off"
+                spellcheck="false"
+            />
             <button type="button" id="add-part-btn">+ part</button>
-        </p>
+        </div>
         <p>
             <button type="submit">Create</button>
             <a href="{{ url_for("mainpage") }}">Cancel</a>
@@ -21,41 +26,82 @@
     </form>
 {% endblock %}
 {% block head %}
+    <style>
+        .part-add-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .part-add-row input[type="text"] {
+            flex: 1 1 10rem;
+        }
+        .part-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            margin-bottom: 0.35rem;
+        }
+        .part-row .part-label {
+            flex: 1 1 12rem;
+        }
+        .part-row .part-uid-label {
+            color: #555;
+            font-size: 0.9rem;
+        }
+    </style>
     <script>
     document.addEventListener("DOMContentLoaded", () => {
         const list = document.getElementById("parts-list");
-        const input = document.getElementById("part-input");
+        const nameInput = document.getElementById("part-name-input");
+        const uidInput = document.getElementById("part-uid-input");
+        const rowsNode = document.getElementById("part-rows-data");
+        const initialRows = rowsNode ? JSON.parse(rowsNode.textContent || "[]") : [];
 
-        function addPart(name) {
-            name = name.trim();
+        function addPart(name, uid) {
+            name = (name || "").trim();
+            uid = (uid || "").trim();
             if (!name) return;
 
-            const row = document.createElement("p");
-            row.textContent = name + " ";
+            const row = document.createElement("div");
+            row.className = "part-row";
 
-            const hidden = document.createElement("input");
-            hidden.type = "hidden";
-            hidden.name = "part_names";
-            hidden.value = name;
+            const nameHidden = document.createElement("input");
+            nameHidden.type = "hidden";
+            nameHidden.name = "part_names";
+            nameHidden.value = name;
+
+            const uidHidden = document.createElement("input");
+            uidHidden.type = "hidden";
+            uidHidden.name = "part_uids";
+            uidHidden.value = uid;
+
+            const label = document.createElement("span");
+            label.className = "part-label";
+            label.textContent = name;
+
+            const uidLabel = document.createElement("span");
+            uidLabel.className = "part-uid-label";
+            uidLabel.textContent = uid ? `UID: ${uid}` : "UID: —";
 
             const remove = document.createElement("button");
             remove.type = "button";
             remove.textContent = "×";
             remove.addEventListener("click", () => row.remove());
 
-            row.prepend(hidden);
+            row.appendChild(nameHidden);
+            row.appendChild(uidHidden);
+            row.appendChild(label);
+            row.appendChild(uidLabel);
             row.appendChild(remove);
             list.appendChild(row);
-            input.value = "";
-            input.focus();
+
+            nameInput.value = "";
+            uidInput.value = "";
+            nameInput.focus();
         }
 
-<<<<<<< Updated upstream
-        document
-            .getElementById("add-part-btn")
-            .addEventListener("click", () => addPart(input.value));
-        input.addEventListener("keydown", (e) => {
-=======
         for (const row of initialRows) {
             addPart(row[0], row[1]);
         }
@@ -68,10 +114,15 @@
             addPart(nameInput.value, uidInput.value);
         });
         nameInput.addEventListener("keydown", (e) => {
->>>>>>> Stashed changes
             if (e.key === "Enter") {
                 e.preventDefault();
-                addPart(input.value);
+                addPart(nameInput.value, uidInput.value);
+            }
+        });
+        uidInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                addPart(nameInput.value, uidInput.value);
             }
         });
     });

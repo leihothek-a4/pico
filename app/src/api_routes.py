@@ -44,6 +44,11 @@ def uid_to_hex(uid_hex: str | None) -> str | None:
     return uid_hex.upper()
 
 
+@api_bp.route("/health")
+def health():
+    return jsonify({"ok": True, "features": ["uid_hex", "inline_part_edit"]})
+
+
 @api_bp.route("/connected")
 def connected_ips():
     lockers = db.session.query(Locker).filter(Locker.ip.isnot(None)).all()

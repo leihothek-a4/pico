@@ -41,11 +41,7 @@ class Part(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     item = db.Column(db.Integer, db.ForeignKey("item.id"))
     name = db.Column(db.Text)
-<<<<<<< Updated upstream
-    uid = db.Column(db.LargeBinary(4), nullable=True)
-=======
     uid_hex = db.Column(db.String(32), nullable=True)
->>>>>>> Stashed changes
 
     def __init__(self, item: Item | int, name: str, uid_hex: str | None = None):
         self.name = name

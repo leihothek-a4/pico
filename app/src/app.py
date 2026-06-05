@@ -1,21 +1,32 @@
-from os import environ, path
+import shutil
+from datetime import datetime
+from os import environ, makedirs, path
 
 from api_routes import api_bp
 from auth_routes import auth_bp, register_auth_guard
 from db import Item, Locker, Part
 from extensions import db
 from flask import Flask, flash, redirect, render_template, request, url_for
-<<<<<<< Updated upstream
-=======
 from schema_migrations import ensure_part_uid_hex_column
-from uid_utils import format_uid_hex, normalize_uid_hex, parse_uid
->>>>>>> Stashed changes
+from uid_utils import format_uid_hex, normalize_uid_hex
 
 basedir = path.abspath(path.dirname(__file__))
+default_db = path.join(basedir, "data.sqlite")
+configured_db = environ.get("DATABASE_PATH", default_db).strip()
+if not path.isabs(configured_db):
+    configured_db = path.abspath(path.join(basedir, configured_db))
+
+db_dir = path.dirname(configured_db)
+if db_dir:
+    makedirs(db_dir, exist_ok=True)
+
+legacy_db = path.join(basedir, "data.sqlite")
+if configured_db != legacy_db and not path.exists(configured_db) and path.exists(legacy_db):
+    shutil.copy2(legacy_db, configured_db)
+
 app = Flask(__name__)
 app.config["SECRET_KEY"] = environ.get("SECRET_KEY", "default-secret-key")
-
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + path.join(basedir, "data.sqlite")
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + configured_db
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
@@ -31,42 +42,20 @@ with app.app_context():
     ensure_part_uid_hex_column()
 
 
-def parse_uid(raw: str) -> bytes | None:
-    cleaned = raw.strip().replace(" ", "").replace(":", "")
-    if not cleaned:
-        return None
-    return bytes.fromhex(cleaned)
+def format_timestamp(value: datetime | None) -> str:
+    if value is None:
+        return "—"
+    return value.strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
 @app.route("/")
 def mainpage():
     lockers = db.session.query(Locker).all()
-<<<<<<< Updated upstream
-    return render_template("main_page.html", lockers=lockers)
-=======
     return render_template(
         "main_page.html",
         lockers=lockers,
-        format_timestamp=format_timestamp,
         format_uid_hex=format_uid_hex,
     )
-
-
-@app.route("/status")
-def status_dashboard():
-    lockers = db.session.query(Locker).order_by(Locker.id.asc()).all()
-    online_count = sum(1 for locker in lockers if locker.status == "online")
-    offline_count = sum(1 for locker in lockers if locker.status == "offline")
-    unknown_count = sum(1 for locker in lockers if (locker.status or "unknown") == "unknown")
-    return render_template(
-        "status_page.html",
-        lockers=lockers,
-        online_count=online_count,
-        offline_count=offline_count,
-        unknown_count=unknown_count,
-        format_timestamp=format_timestamp,
-    )
->>>>>>> Stashed changes
 
 
 @app.route("/lockers/new", methods=["GET", "POST"])
@@ -92,19 +81,12 @@ def new_item(locker_id):
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         if not name:
-            return render_template("item_form.html", locker=locker, name="")
+            return render_template("item_form.html", locker=locker, name="", part_rows=[])
 
         item = Item(locker, name)
         db.session.add(item)
         db.session.flush()
 
-<<<<<<< Updated upstream
-        part_names = [
-            n.strip() for n in request.form.getlist("part_names") if n.strip()
-        ]
-        for part_name in part_names:
-            db.session.add(Part(item, part_name, None))
-=======
         part_names = request.form.getlist("part_names")
         part_uids = request.form.getlist("part_uids")
         part_errors = []
@@ -130,16 +112,18 @@ def new_item(locker_id):
                 "item_form.html",
                 locker=locker,
                 name=name,
-                part_rows=list(zip(part_names, part_uids)),
+                part_rows=[
+                    [name, uid]
+                    for name, uid in zip(part_names, part_uids)
+                ],
             )
->>>>>>> Stashed changes
 
         db.session.commit()
         part_msg = f" with {len(part_names)} part(s)" if part_names else ""
         flash(f'Item "{name}" created{part_msg}.')
         return redirect(url_for("mainpage"))
 
-    return render_template("item_form.html", locker=locker)
+    return render_template("item_form.html", locker=locker, part_rows=[])
 
 
 @app.route("/items/<int:item_id>/parts/new", methods=["GET", "POST"])
@@ -166,31 +150,26 @@ def new_part(item_id):
             )
 
         try:
-<<<<<<< Updated upstream
-            uid = parse_uid(uid_raw)
-        except ValueError:
-            flash("Invalid UID — use hex bytes like A7 A0 C8 01.")
-=======
             uid_hex = normalize_uid_hex(uid_raw)
         except ValueError as exc:
             flash(str(exc))
->>>>>>> Stashed changes
             return render_template(
                 "part_form.html",
                 item=item,
                 locker=locker,
                 name=name,
                 uid=uid_raw,
+                submit_label="Add",
             )
 
         db.session.add(Part(item, name, uid_hex))
         db.session.commit()
-        flash(f'Part "{name}" added.')
+        flash(
+            f'Part "{name}" added.'
+            + (f" RFID UID: {format_uid_hex(uid_hex)}" if uid_hex else "")
+        )
         return redirect(url_for("mainpage"))
 
-<<<<<<< Updated upstream
-    return render_template("part_form.html", item=item, locker=locker)
-=======
     return render_template(
         "part_form.html",
         item=item,
@@ -214,6 +193,7 @@ def edit_part(part_id):
         uid_raw = request.form.get("uid", "")
 
         if not name:
+            flash("Part name is required.")
             return render_template(
                 "part_form.html",
                 item=item,
@@ -243,7 +223,7 @@ def edit_part(part_id):
         db.session.commit()
         flash(
             f'Part "{name}" updated.'
-            + (f' RFID UID: {format_uid_hex(uid_hex)}' if uid_hex else " RFID UID cleared.")
+            + (f" RFID UID: {format_uid_hex(uid_hex)}" if uid_hex else " RFID UID cleared.")
         )
         return redirect(url_for("mainpage"))
 
@@ -256,7 +236,6 @@ def edit_part(part_id):
         uid=format_uid_hex(part.uid_hex),
         submit_label="Save",
     )
->>>>>>> Stashed changes
 
 
 if __name__ == "__main__":
