@@ -1,3 +1,4 @@
+from datetime import datetime
 from os import environ, path
 
 from api_routes import api_bp
@@ -32,10 +33,32 @@ def parse_uid(raw: str) -> bytes | None:
     return bytes.fromhex(cleaned)
 
 
+def format_timestamp(value: datetime | None) -> str:
+    if value is None:
+        return "—"
+    return value.strftime("%Y-%m-%d %H:%M:%S UTC")
+
+
 @app.route("/")
 def mainpage():
     lockers = db.session.query(Locker).all()
-    return render_template("main_page.html", lockers=lockers)
+    return render_template("main_page.html", lockers=lockers, format_timestamp=format_timestamp)
+
+
+@app.route("/status")
+def status_dashboard():
+    lockers = db.session.query(Locker).order_by(Locker.id.asc()).all()
+    online_count = sum(1 for locker in lockers if locker.status == "online")
+    offline_count = sum(1 for locker in lockers if locker.status == "offline")
+    unknown_count = sum(1 for locker in lockers if (locker.status or "unknown") == "unknown")
+    return render_template(
+        "status_page.html",
+        lockers=lockers,
+        online_count=online_count,
+        offline_count=offline_count,
+        unknown_count=unknown_count,
+        format_timestamp=format_timestamp,
+    )
 
 
 @app.route("/lockers/new", methods=["GET", "POST"])

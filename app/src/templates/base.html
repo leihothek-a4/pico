@@ -21,12 +21,33 @@
             .item {
                 margin-left: 1rem;
             }
+            .badge {
+                display: inline-block;
+                border-radius: 999px;
+                padding: 0.1rem 0.45rem;
+                font-size: 0.75rem;
+                font-weight: 600;
+                margin-left: 0.35rem;
+            }
+            .badge-online {
+                background: #dcfce7;
+                color: #166534;
+            }
+            .badge-offline {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+            .badge-unknown {
+                background: #f3f4f6;
+                color: #4b5563;
+            }
         </style>
         {% block head %}{% endblock %}
     </head>
     <body>
         <p>
             <a href="{{ url_for("mainpage") }}">Lockers</a> ·
+            <a href="{{ url_for("status_dashboard") }}">Status</a> ·
             <a href="{{ url_for("new_locker") }}">+ locker</a>
             {% if session.get("github_user") %}
                 · {{ session.github_user }}
