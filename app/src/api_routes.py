@@ -38,10 +38,10 @@ def check_authentication():
         return jsonify({"error": "Unauthorized"}), 401
 
 
-def uid_to_hex(uid: bytes | None) -> str | None:
-    if not uid:
+def uid_to_hex(uid_hex: str | None) -> str | None:
+    if not uid_hex:
         return None
-    return uid.hex().upper()
+    return uid_hex.upper()
 
 
 @api_bp.route("/connected")
@@ -132,7 +132,7 @@ def inventory():
                 {
                     "id": part.id,
                     "name": part.name,
-                    "uid_hex": uid_to_hex(part.uid),
+                    "uid_hex": uid_to_hex(part.uid_hex),
                 }
             )
         items_out.append(

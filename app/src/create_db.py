@@ -13,8 +13,8 @@ with app.app_context():
     db.session.add(miniTableTennisSet)
     db.session.commit()
 
-    batton0 = Part(miniTableTennisSet, "batton", bytes([0xA7, 0xA0, 0xC8, 0x01]))
-    batton1 = Part(miniTableTennisSet, "batton", bytes([0xB5, 0x4C, 0xB6, 0x02]))
+    batton0 = Part(miniTableTennisSet, "batton", "a7a0c801")
+    batton1 = Part(miniTableTennisSet, "batton", "b54cb602")
     net = Part(miniTableTennisSet, "net", None)
 
     db.session.add_all([batton0, batton1, net])

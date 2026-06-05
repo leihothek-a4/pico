@@ -1,5 +1,23 @@
 {% extends "base.html" %}
 {% block title %}Lockers{% endblock %}
+{% block head %}
+    <style>
+        .part-line {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            align-items: center;
+            margin: 0.35rem 0;
+        }
+        .part-line input[type="text"] {
+            font-size: 0.9rem;
+        }
+        .part-line .uid-input {
+            min-width: 11rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+    </style>
+{% endblock %}
 {% block content %}
     <h1>Lockers</h1>
     {% if not lockers %}
@@ -33,10 +51,27 @@
                                 </p>
                             {% endif %}
                             {% for part in item.parts %}
+<<<<<<< Updated upstream
                                 <p>
                                     {{ part.name }}
                                     {% if part.uid %}<small>({{ part.uid.hex(" ") }})</small>{% endif %}
                                 </p>
+=======
+                                <form method="post" action="{{ url_for('edit_part', part_id=part.id) }}" class="part-line">
+                                    <input type="text" name="name" required value="{{ part.name }}" title="Part name">
+                                    <input
+                                        type="text"
+                                        name="uid"
+                                        class="uid-input"
+                                        value="{{ format_uid_hex(part.uid_hex) }}"
+                                        placeholder="RFID UID e.g. A7 A0 C8 01"
+                                        autocomplete="off"
+                                        spellcheck="false"
+                                        title="RFID UID (4-10 bytes hex)"
+                                    >
+                                    <button type="submit">Save</button>
+                                </form>
+>>>>>>> Stashed changes
                             {% endfor %}
                         </div>
                     </details>

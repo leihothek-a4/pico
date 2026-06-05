@@ -3,7 +3,11 @@
 {% block content %}
     <h1>Add part to "{{ item.name }}"</h1>
     <p>
+<<<<<<< Updated upstream
         <small>Locker {{ locker.id }}, item {{ item.id }}</small>
+=======
+        <small>{% if locker %}Locker {{ locker.id }}, {% endif %}item {{ item.name }}</small>
+>>>>>>> Stashed changes
     </p>
     <form method="post">
         <label for="name">Part name</label>

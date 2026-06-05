@@ -50,10 +50,25 @@
             input.focus();
         }
 
+<<<<<<< Updated upstream
         document
             .getElementById("add-part-btn")
             .addEventListener("click", () => addPart(input.value));
         input.addEventListener("keydown", (e) => {
+=======
+        for (const row of initialRows) {
+            addPart(row[0], row[1]);
+        }
+
+        document.getElementById("item-form").addEventListener("submit", () => {
+            addPart(nameInput.value, uidInput.value);
+        });
+
+        document.getElementById("add-part-btn").addEventListener("click", () => {
+            addPart(nameInput.value, uidInput.value);
+        });
+        nameInput.addEventListener("keydown", (e) => {
+>>>>>>> Stashed changes
             if (e.key === "Enter") {
                 e.preventDefault();
                 addPart(input.value);
