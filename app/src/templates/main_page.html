@@ -42,7 +42,12 @@
                             {% for part in item.parts %}
                                 <p>
                                     {{ part.name }}
-                                    {% if part.uid %}<small>({{ part.uid.hex(" ") }})</small>{% endif %}
+                                    {% if part.uid %}
+                                        <small>({{ format_uid(part.uid) }})</small>
+                                    {% else %}
+                                        <small><em>no RFID UID</em></small>
+                                    {% endif %}
+                                    <a href="{{ url_for('edit_part', part_id=part.id) }}">edit</a>
                                 </p>
                             {% endfor %}
                         </div>

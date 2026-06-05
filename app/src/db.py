@@ -44,7 +44,7 @@ class Part(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     item = db.Column(db.Integer, db.ForeignKey("item.id"))
     name = db.Column(db.Text)
-    uid = db.Column(db.LargeBinary(4), nullable=True)
+    uid = db.Column(db.LargeBinary(10), nullable=True)
 
     def __init__(self, item: Item | int, name: str, uid: bytes | None):
         self.name = name

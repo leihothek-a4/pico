@@ -6,6 +6,7 @@ from auth_routes import auth_bp, register_auth_guard
 from db import Item, Locker, Part
 from extensions import db
 from flask import Flask, flash, redirect, render_template, request, url_for
+from uid_utils import format_uid, parse_uid
 
 basedir = path.abspath(path.dirname(__file__))
 app = Flask(__name__)
@@ -26,13 +27,6 @@ with app.app_context():
     ensure_locker_columns()
 
 
-def parse_uid(raw: str) -> bytes | None:
-    cleaned = raw.strip().replace(" ", "").replace(":", "")
-    if not cleaned:
-        return None
-    return bytes.fromhex(cleaned)
-
-
 def format_timestamp(value: datetime | None) -> str:
     if value is None:
         return "—"
@@ -42,7 +36,12 @@ def format_timestamp(value: datetime | None) -> str:
 @app.route("/")
 def mainpage():
     lockers = db.session.query(Locker).all()
-    return render_template("main_page.html", lockers=lockers, format_timestamp=format_timestamp)
+    return render_template(
+        "main_page.html",
+        lockers=lockers,
+        format_timestamp=format_timestamp,
+        format_uid=format_uid,
+    )
 
 
 @app.route("/status")
@@ -90,11 +89,33 @@ def new_item(locker_id):
         db.session.add(item)
         db.session.flush()
 
-        part_names = [
-            n.strip() for n in request.form.getlist("part_names") if n.strip()
-        ]
-        for part_name in part_names:
-            db.session.add(Part(item, part_name, None))
+        part_names = request.form.getlist("part_names")
+        part_uids = request.form.getlist("part_uids")
+        part_errors = []
+
+        for index, raw_name in enumerate(part_names):
+            part_name = raw_name.strip()
+            if not part_name:
+                continue
+
+            uid_raw = part_uids[index].strip() if index < len(part_uids) else ""
+            try:
+                uid = parse_uid(uid_raw)
+            except ValueError as exc:
+                part_errors.append(f"{part_name}: {exc}")
+                continue
+
+            db.session.add(Part(item, part_name, uid))
+
+        if part_errors:
+            for message in part_errors:
+                flash(message)
+            return render_template(
+                "item_form.html",
+                locker=locker,
+                name=name,
+                part_rows=list(zip(part_names, part_uids)),
+            )
 
         db.session.commit()
         part_msg = f" with {len(part_names)} part(s)" if part_names else ""
@@ -124,14 +145,15 @@ def new_part(item_id):
 
         try:
             uid = parse_uid(uid_raw)
-        except ValueError:
-            flash("Invalid UID — use hex bytes like A7 A0 C8 01.")
+        except ValueError as exc:
+            flash(str(exc))
             return render_template(
                 "part_form.html",
                 item=item,
                 locker=locker,
                 name=name,
                 uid=uid_raw,
+                submit_label="Add",
             )
 
         db.session.add(Part(item, name, uid))
@@ -139,7 +161,68 @@ def new_part(item_id):
         flash(f'Part "{name}" added.')
         return redirect(url_for("mainpage"))
 
-    return render_template("part_form.html", item=item, locker=locker)
+    return render_template(
+        "part_form.html",
+        item=item,
+        locker=locker,
+        submit_label="Add",
+    )
+
+
+@app.route("/parts/<int:part_id>/edit", methods=["GET", "POST"])
+def edit_part(part_id):
+    part = db.session.get(Part, part_id)
+    if part is None:
+        flash("Part not found.")
+        return redirect(url_for("mainpage"))
+
+    item = db.session.get(Item, part.item)
+    locker = db.session.get(Locker, item.locker) if item else None
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        uid_raw = request.form.get("uid", "")
+
+        if not name:
+            return render_template(
+                "part_form.html",
+                item=item,
+                locker=locker,
+                part=part,
+                name=name,
+                uid=uid_raw,
+                submit_label="Save",
+            )
+
+        try:
+            uid = parse_uid(uid_raw)
+        except ValueError as exc:
+            flash(str(exc))
+            return render_template(
+                "part_form.html",
+                item=item,
+                locker=locker,
+                part=part,
+                name=name,
+                uid=uid_raw,
+                submit_label="Save",
+            )
+
+        part.name = name
+        part.uid = uid
+        db.session.commit()
+        flash(f'Part "{name}" updated.')
+        return redirect(url_for("mainpage"))
+
+    return render_template(
+        "part_form.html",
+        item=item,
+        locker=locker,
+        part=part,
+        name=part.name,
+        uid=format_uid(part.uid),
+        submit_label="Save",
+    )
 
 
 if __name__ == "__main__":
