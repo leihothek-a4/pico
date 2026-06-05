@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Pi status{% endblock %}
+{% block head %}
+    <meta http-equiv="refresh" content="30">
+    <style>
+        .summary { display: flex; gap: 0.75rem; flex-wrap: wrap; margin: 1rem 0; }
+        .summary-card { border: 1px solid #ddd; border-radius: 0.5rem; padding: 0.75rem 1rem; min-width: 7rem; }
+        .summary-card strong { display: block; font-size: 1.5rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { border-bottom: 1px solid #eee; padding: 0.5rem 0.4rem; text-align: left; }
+        th { font-size: 0.8rem; text-transform: uppercase; color: #666; }
+        .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.85rem; }
+        .muted { color: #666; font-size: 0.9rem; }
+    </style>
+{% endblock %}
+{% block content %}
+    <h1>Raspberry Pi / locker status</h1>
+    <p class="muted">Updated by n8n ping checks. Auto-refreshes every 30 seconds.</p>
+    <div class="summary">
+        <div class="summary-card"><span>Online</span><strong>{{ online_count }}</strong></div>
+        <div class="summary-card"><span>Offline</span><strong>{{ offline_count }}</strong></div>
+        <div class="summary-card"><span>Unknown</span><strong>{{ unknown_count }}</strong></div>
+        <div class="summary-card"><span>Total</span><strong>{{ lockers|length }}</strong></div>
+    </div>
+    {% if not lockers %}
+        <p><em>No lockers yet.</em> Approve a Pico in Leihothek — it syncs here via <code>/api/lockers/sync</code>.</p>
+    {% else %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Name</th>
+                    <th>Locker ID</th>
+                    <th>IP</th>
+                    <th>Last seen</th>
+                    <th>Last ping</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for locker in lockers %}
+                    <tr>
+                        <td>
+                            {% if locker.status == "online" %}
+                                <span class="badge badge-online">Online</span>
+                            {% elif locker.status == "offline" %}
+                                <span class="badge badge-offline">Offline</span>
+                            {% else %}
+                                <span class="badge badge-unknown">Unknown</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ locker.name or ("Locker " ~ locker.id) }}</td>
+                        <td class="mono">{{ locker.locker_id or "—" }}</td>
+                        <td class="mono">{{ locker.ip or "—" }}</td>
+                        <td>{{ format_timestamp(locker.last_seen_at) }}</td>
+                        <td>{{ format_timestamp(locker.last_ping_at) }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endblock %}

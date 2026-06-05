@@ -9,6 +9,9 @@ class Locker(db.Model):
     device_uid = db.Column(db.String(64), nullable=True, unique=True, index=True)
     locker_id = db.Column(db.String(64), nullable=True, unique=True, index=True)
     name = db.Column(db.String(120), nullable=True)
+    status = db.Column(db.String(16), nullable=False, default="unknown", index=True)
+    last_seen_at = db.Column(db.DateTime, nullable=True)
+    last_ping_at = db.Column(db.DateTime, nullable=True)
     intended_items = db.relationship(
         "Item", backref="locker_ref", lazy="dynamic", cascade="all, delete-orphan"
     )

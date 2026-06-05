@@ -7,7 +7,7 @@ from auth_routes import auth_bp, register_auth_guard
 from db import Item, Locker, Part
 from extensions import db
 from flask import Flask, flash, redirect, render_template, request, url_for
-from schema_migrations import ensure_part_uid_hex_column
+from schema_migrations import ensure_locker_presence_columns, ensure_part_uid_hex_column
 from uid_utils import format_uid_hex, normalize_uid_hex
 
 basedir = path.abspath(path.dirname(__file__))
@@ -40,6 +40,7 @@ with app.app_context():
 
     ensure_locker_columns()
     ensure_part_uid_hex_column()
+    ensure_locker_presence_columns()
 
 
 def format_timestamp(value: datetime | None) -> str:
@@ -55,6 +56,23 @@ def mainpage():
         "main_page.html",
         lockers=lockers,
         format_uid_hex=format_uid_hex,
+        format_timestamp=format_timestamp,
+    )
+
+
+@app.route("/status")
+def status_dashboard():
+    lockers = db.session.query(Locker).order_by(Locker.id.asc()).all()
+    online_count = sum(1 for locker in lockers if locker.status == "online")
+    offline_count = sum(1 for locker in lockers if locker.status == "offline")
+    unknown_count = sum(1 for locker in lockers if (locker.status or "unknown") == "unknown")
+    return render_template(
+        "status_page.html",
+        lockers=lockers,
+        online_count=online_count,
+        offline_count=offline_count,
+        unknown_count=unknown_count,
+        format_timestamp=format_timestamp,
     )
 
 

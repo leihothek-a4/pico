@@ -30,6 +30,13 @@
             <summary>
                 {{ locker.name or ("Locker " ~ locker.id) }}
                 {% if locker.ip %}({{ locker.ip }}){% endif %}
+                {% if locker.status == "online" %}
+                    <span class="badge badge-online">online</span>
+                {% elif locker.status == "offline" %}
+                    <span class="badge badge-offline">offline</span>
+                {% else %}
+                    <span class="badge badge-unknown">unknown</span>
+                {% endif %}
                 <a href="{{ url_for('new_item', locker_id=locker.id) }}">+ item</a>
             </summary>
             <div class="locker">

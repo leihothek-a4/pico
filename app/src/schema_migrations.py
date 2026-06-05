@@ -27,3 +27,20 @@ def ensure_part_uid_hex_column():
                         text("UPDATE part SET uid_hex = :uid_hex WHERE id = :id AND (uid_hex IS NULL OR uid_hex = '')"),
                         {"uid_hex": hex_value, "id": row[0]},
                     )
+
+
+def ensure_locker_presence_columns():
+    inspector = inspect(db.engine)
+    if "locker" not in inspector.get_table_names():
+        return
+
+    existing = {c["name"] for c in inspector.get_columns("locker")}
+    with db.engine.begin() as conn:
+        if "status" not in existing:
+            conn.execute(
+                text("ALTER TABLE locker ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT 'unknown'")
+            )
+        if "last_seen_at" not in existing:
+            conn.execute(text("ALTER TABLE locker ADD COLUMN last_seen_at DATETIME"))
+        if "last_ping_at" not in existing:
+            conn.execute(text("ALTER TABLE locker ADD COLUMN last_ping_at DATETIME"))
