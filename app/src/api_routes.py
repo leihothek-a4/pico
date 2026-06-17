@@ -1,7 +1,10 @@
+import logging
 import os
 from secrets import compare_digest
 
 from flask import Blueprint, jsonify, request
+
+logger = logging.getLogger(__name__)
 from sqlalchemy import inspect, text
 
 from db import Item, Locker, Part
@@ -36,15 +39,45 @@ def ensure_locker_columns():
             conn.execute(text("ALTER TABLE locker ADD COLUMN last_ping_at DATETIME"))
 
 
+def auth_failure_payload(token: str) -> dict:
+    bearer_value = token[7:] if token.startswith("Bearer ") else ""
+    return {
+        "error": "Unauthorized",
+        "hint": "Send header: Authorization: Bearer <API_KEY>",
+        "auth": {
+            "header_present": bool(token),
+            "header_length": len(token),
+            "starts_with_bearer": token.startswith("Bearer "),
+            "bearer_value_length": len(bearer_value),
+            "expected_bearer_length": len(API_KEY) if API_KEY else 0,
+            "server_api_key_configured": bool(API_KEY),
+        },
+    }
+
+
 @api_bp.before_request
 def check_authentication():
     if not API_KEY:
-        return jsonify({"error": "Unauthorized"}), 401
+        payload = {
+            "error": "Unauthorized",
+            "hint": "Server API_KEY is not configured",
+            "auth": {"server_api_key_configured": False},
+        }
+        logger.warning("API auth rejected: %s %s — API_KEY not set", request.method, request.path)
+        return jsonify(payload), 401
 
     token = request.headers.get("Authorization", "")
     expected = f"Bearer {API_KEY}"
     if not compare_digest(token, expected):
-        return jsonify({"error": "Unauthorized"}), 401
+        payload = auth_failure_payload(token)
+        logger.warning(
+            "API auth failed: %s %s from %s — %s",
+            request.method,
+            request.path,
+            request.remote_addr,
+            payload["auth"],
+        )
+        return jsonify(payload), 401
 
 
 def uid_to_hex(uid_hex: str | None) -> str | None:

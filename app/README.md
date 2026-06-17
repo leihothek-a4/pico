@@ -76,10 +76,17 @@ Alternative single update: `POST /api/lockers/presence` with `{"ip": "...", "onl
 
 ## Deploy
 
+**Always use docker compose** — never `docker run -v leihothek-pico-data:/app/src`.
+
+Mounting a volume on `/app/src` replaces the code baked into the image with stale files from June 4. Rebuilds then have no effect (`/status` and other new routes disappear).
+
 ```bash
 cd /root/pico/app
 ./deploy.sh
+# or: docker compose build --no-cache && docker compose up -d
 ```
+
+Only `/app/data` is persisted (database). Code comes from the image build.
 
 Verify: `curl -H "Authorization: Bearer $API_KEY" http://127.0.0.1:5000/api/health`  
 → should include `"presence"` in features.
@@ -87,3 +94,42 @@ Verify: `curl -H "Authorization: Bearer $API_KEY" http://127.0.0.1:5000/api/heal
 ## RFID UIDs
 
 On the Lockers page, each part has inline name + RFID UID + Save.
+
+## Debugging Pico HTTP 401
+
+**Server logs** (no firmware change needed):
+
+```bash
+docker logs -f app-pico-app-1
+```
+
+Failed auth lines look like: `API auth failed: GET /api/inventory from … — {'header_present': …}`
+
+**401 JSON** (safe, no secrets) tells you what arrived:
+
+```json
+{
+  "error": "Unauthorized",
+  "hint": "Send header: Authorization: Bearer <API_KEY>",
+  "auth": {
+    "header_present": false,
+    "header_length": 0,
+    "starts_with_bearer": false,
+    "bearer_value_length": 0,
+    "expected_bearer_length": 8,
+    "server_api_key_configured": true
+  }
+}
+```
+
+- `header_present: false` → Pico did not send `Authorization` (reflash firmware with auth support).
+- `bearer_value_length` ≠ `expected_bearer_length` → wrong API key in `leihothek_config.h`.
+
+**Pico serial** (after reflashing firmware with `LEIHOTHEK_HTTP_DEBUG 1`):
+
+```
+[leihothek] HTTP GET 128.140.115.158:5000/api/inventory?... (bearer_len=8, request_bytes=…)
+[leihothek] server says: {"error":"Unauthorized","auth":{...}}
+```
+
+Set `LEIHOTHEK_HTTP_DEBUG` to `0` in `leihothek_config.h` once fixed.
