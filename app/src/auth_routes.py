@@ -18,10 +18,16 @@ GITHUB_ALLOWED_USERS = {
 auth_bp = Blueprint("auth", __name__)
 
 
+def _is_api_request() -> bool:
+    """API routes use Bearer auth, not GitHub session (see api_routes.check_authentication)."""
+    path = request.path or ""
+    return path == "/api" or path.startswith("/api/")
+
+
 def register_auth_guard(app):
     @app.before_request
     def require_github_login():
-        if request.blueprint == "api":
+        if _is_api_request() or request.blueprint == "api":
             return None
         if request.endpoint and request.endpoint.startswith("auth."):
             return None
