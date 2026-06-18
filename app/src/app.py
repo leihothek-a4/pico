@@ -2,13 +2,14 @@ import shutil
 from datetime import datetime
 from os import environ, makedirs, path
 
+from flask import Flask, flash, redirect, render_template, request, url_for
+
 from api_routes import api_bp
 from auth_routes import auth_bp, register_auth_guard
-from db import Item, Locker, Part
+from db import Item, Locker, Part, ScannedPart
 from extensions import db
-from flask import Flask, flash, redirect, render_template, request, url_for
-from schema_migrations import ensure_locker_presence_columns, ensure_part_uid_hex_column
 from presence import effective_status, presence_timeout_seconds, refresh_stale_lockers
+from schema_migrations import ensure_locker_presence_columns, ensure_part_uid_hex_column
 from uid_utils import format_uid_hex, normalize_uid_hex
 
 basedir = path.abspath(path.dirname(__file__))
@@ -22,7 +23,11 @@ if db_dir:
     makedirs(db_dir, exist_ok=True)
 
 legacy_db = path.join(basedir, "data.sqlite")
-if configured_db != legacy_db and not path.exists(configured_db) and path.exists(legacy_db):
+if (
+    configured_db != legacy_db
+    and not path.exists(configured_db)
+    and path.exists(legacy_db)
+):
     shutil.copy2(legacy_db, configured_db)
 
 app = Flask(__name__)
@@ -56,11 +61,9 @@ def mainpage():
     refresh_stale_lockers(timeout)
     db.session.commit()
     lockers = db.session.query(Locker).all()
-    locker_statuses = {locker.id: effective_status(locker, timeout) for locker in lockers}
     return render_template(
         "main_page.html",
         lockers=lockers,
-        locker_statuses=locker_statuses,
         format_uid_hex=format_uid_hex,
         format_timestamp=format_timestamp,
     )
@@ -88,6 +91,40 @@ def status_dashboard():
     )
 
 
+@app.route("/inventory", methods=["GET"])
+def contents():
+    lockers = db.session.query(Locker).order_by(Locker.id.asc()).all()
+    scanned_part_ids: dict[int, list[int]] = {}
+    for locker in lockers:
+        scanned_part_ids[locker.id] = []
+    for row in db.session.query(ScannedPart).all():
+        part_ids = scanned_part_ids.setdefault(row.locker_id, [])
+        if row.part_id not in part_ids:
+            part_ids.append(row.part_id)
+
+    item_scan_counts: dict[int, tuple[int, int]] = {}
+    for locker in lockers:
+        scanned = scanned_part_ids[locker.id]
+        for item in locker.intended_items:  # type: ignore
+            with_uid = 0
+            scanned_count = 0
+            for part in item.parts:
+                if not part.uid_hex:
+                    continue
+                with_uid += 1
+                if part.id in scanned:
+                    scanned_count += 1
+            item_scan_counts[item.id] = (scanned_count, with_uid)
+
+    return render_template(
+        "inventory.html",
+        lockers=lockers,
+        scanned_part_ids=scanned_part_ids,
+        item_scan_counts=item_scan_counts,
+        format_uid_hex=format_uid_hex,
+    )
+
+
 @app.route("/lockers/new", methods=["GET", "POST"])
 def new_locker():
     if request.method == "POST":
@@ -111,7 +148,9 @@ def new_item(locker_id):
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         if not name:
-            return render_template("item_form.html", locker=locker, name="", part_rows=[])
+            return render_template(
+                "item_form.html", locker=locker, name="", part_rows=[]
+            )
 
         item = Item(locker, name)
         db.session.add(item)
@@ -142,10 +181,7 @@ def new_item(locker_id):
                 "item_form.html",
                 locker=locker,
                 name=name,
-                part_rows=[
-                    [name, uid]
-                    for name, uid in zip(part_names, part_uids)
-                ],
+                part_rows=[[name, uid] for name, uid in zip(part_names, part_uids)],
             )
 
         db.session.commit()
@@ -253,7 +289,11 @@ def edit_part(part_id):
         db.session.commit()
         flash(
             f'Part "{name}" updated.'
-            + (f" RFID UID: {format_uid_hex(uid_hex)}" if uid_hex else " RFID UID cleared.")
+            + (
+                f" RFID UID: {format_uid_hex(uid_hex)}"
+                if uid_hex
+                else " RFID UID cleared."
+            )
         )
         return redirect(url_for("mainpage"))
 

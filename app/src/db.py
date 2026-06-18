@@ -1,3 +1,5 @@
+import uuid
+
 from extensions import db
 
 
@@ -53,3 +55,18 @@ class Part(db.Model):
             self.item = item.id
         else:
             self.item = item
+
+
+class ScannedPart(db.Model):
+    __tablename__ = "scanned_part"
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    locker_id = db.Column(db.Integer, db.ForeignKey("locker.id"))
+    part_id = db.Column(db.Integer, db.ForeignKey("part.id"))
+
+    def __init__(self, locker_id: str, part: Part | int):
+        self.locker_id = locker_id
+        if isinstance(part, Part):
+            self.part_id = part.id
+        else:
+            self.part_id = part

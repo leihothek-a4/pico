@@ -38,6 +38,7 @@
     <body>
         <p>
             <a href="{{ url_for("mainpage") }}">Lockers</a> ·
+            <a href="{{ url_for("contents") }}">Inventory</a> ·
             <a href="{{ url_for("status_dashboard") }}">Pi status</a> ·
             <a href="{{ url_for("new_locker") }}">+ locker</a>
             {% if session.get("github_user") %}
