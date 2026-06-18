@@ -19,3 +19,8 @@ with app.app_context():
 
     db.session.add_all([batton0, batton1, net])
     db.session.commit()
+
+    
+    content0 = LockerContents(locker, bytes([0xa7, 0xa0, 0xc8, 0x01]))
+    db.session.add(content0)
+    db.session.commit()

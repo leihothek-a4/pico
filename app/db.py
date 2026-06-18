@@ -1,10 +1,17 @@
-from app import db
+from app import db, app
 
 class Locker(db.Model):
     __tablename__ = 'locker'
 
     id = db.Column(db.Integer, primary_key=True)
     intended_items = db.relationship('Item',backref='item',lazy='dynamic', cascade="all, delete-orphan")
+    contents = db.relationship('LockerContents',backref='locker_contents',lazy='dynamic', cascade="all, delete-orphan")
+
+    def getContentUids(self):
+        uids = []
+        for content in self.contents:
+            uids.append(content.uid)
+        return uids
 
 class Item(db.Model):
     __tablename__ = 'item'
@@ -36,3 +43,20 @@ class Part(db.Model):
             self.item = item.id
         else:
             self.item = item
+
+class LockerContents(db.Model):
+    __tablename__ = 'locker_contents'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    locker = db.Column(db.Integer, db.ForeignKey('locker.id'), nullable=False)
+
+    uid = db.Column(db.LargeBinary(4), nullable=False)
+
+    def __init__(self, locker: Locker | int, uid: bytes):
+        if isinstance(locker, Locker):
+            self.locker = locker.id
+        else:
+            self.locker = locker
+
+        self.uid = uid

@@ -26,7 +26,12 @@
                                 <summary>
                                     {{ part.name }}
                                     {% if part.uid %}
-                                        (UID: {{ part.uid }})
+                                        (UID: {{ part.uid.hex() }})
+                                    {% endif %}
+                                    {% if part.uid in locker.getContentUids() %}
+                                        🟢
+                                    {% else %}
+                                        🔴
                                     {% endif %}
                                 </summary>
                         {% endfor %}
