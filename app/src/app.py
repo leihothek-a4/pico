@@ -9,6 +9,7 @@ from extensions import db
 from flask import Flask, flash, redirect, render_template, request, url_for
 from schema_migrations import ensure_locker_presence_columns, ensure_part_uid_hex_column
 from presence import effective_status, presence_timeout_seconds, refresh_stale_lockers
+from uid_utils import format_uid_hex, normalize_uid_hex
 
 basedir = path.abspath(path.dirname(__file__))
 default_db = path.join(basedir, "data.sqlite")
