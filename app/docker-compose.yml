@@ -10,6 +10,7 @@ services:
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
       GITHUB_ALLOWED_USERS: ${GITHUB_ALLOWED_USERS:-}
+      PRESENCE_TIMEOUT_SECONDS: ${PRESENCE_TIMEOUT_SECONDS:-150}
     volumes:
       - pico-app-data:/app/data
     restart: unless-stopped

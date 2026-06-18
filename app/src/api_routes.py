@@ -9,7 +9,15 @@ from sqlalchemy import inspect, text
 
 from db import Item, Locker, Part
 from extensions import db
-from presence import apply_presence, find_locker, locker_payload
+from presence import (
+    apply_presence,
+    find_locker,
+    locker_payload,
+    presence_summary,
+    presence_timeout_seconds,
+    record_checkin,
+    refresh_stale_lockers,
+)
 
 API_KEY = os.environ.get("API_KEY")
 
@@ -103,7 +111,13 @@ def parse_presence_entry(entry: dict) -> tuple[str | None, str | None, str | Non
 
 @api_bp.route("/health")
 def health():
-    return jsonify({"ok": True, "features": ["uid_hex", "inline_part_edit", "presence"]})
+    return jsonify(
+        {
+            "ok": True,
+            "features": ["uid_hex", "inline_part_edit", "presence", "checkin_presence"],
+            "presence_timeout_seconds": presence_timeout_seconds(),
+        }
+    )
 
 
 @api_bp.route("/connected")
@@ -122,7 +136,17 @@ def list_lockers():
 
 @api_bp.route("/lockers/status", methods=["GET"])
 def locker_status():
-    return list_lockers()
+    timeout = presence_timeout_seconds()
+    refresh_stale_lockers(timeout)
+    db.session.commit()
+    lockers = db.session.query(Locker).order_by(Locker.id.asc()).all()
+    return jsonify(presence_summary(lockers, timeout_s=timeout))
+
+
+@api_bp.route("/presence", methods=["GET"])
+def presence():
+    """n8n-friendly presence snapshot (same payload as /api/lockers/status)."""
+    return locker_status()
 
 
 @api_bp.route("/lockers/presence", methods=["POST"])
@@ -262,6 +286,9 @@ def inventory():
     )
     if locker is None:
         return jsonify({"error": "locker not found"}), 404
+
+    record_checkin(locker)
+    db.session.commit()
 
     items_out = []
     for item in locker.intended_items:

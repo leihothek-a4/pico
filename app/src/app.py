@@ -8,7 +8,7 @@ from db import Item, Locker, Part
 from extensions import db
 from flask import Flask, flash, redirect, render_template, request, url_for
 from schema_migrations import ensure_locker_presence_columns, ensure_part_uid_hex_column
-from uid_utils import format_uid_hex, normalize_uid_hex
+from presence import effective_status, presence_timeout_seconds, refresh_stale_lockers
 
 basedir = path.abspath(path.dirname(__file__))
 default_db = path.join(basedir, "data.sqlite")
@@ -51,10 +51,15 @@ def format_timestamp(value: datetime | None) -> str:
 
 @app.route("/")
 def mainpage():
+    timeout = presence_timeout_seconds()
+    refresh_stale_lockers(timeout)
+    db.session.commit()
     lockers = db.session.query(Locker).all()
+    locker_statuses = {locker.id: effective_status(locker, timeout) for locker in lockers}
     return render_template(
         "main_page.html",
         lockers=lockers,
+        locker_statuses=locker_statuses,
         format_uid_hex=format_uid_hex,
         format_timestamp=format_timestamp,
     )
@@ -62,13 +67,19 @@ def mainpage():
 
 @app.route("/status")
 def status_dashboard():
+    timeout = presence_timeout_seconds()
+    refresh_stale_lockers(timeout)
+    db.session.commit()
     lockers = db.session.query(Locker).order_by(Locker.id.asc()).all()
-    online_count = sum(1 for locker in lockers if locker.status == "online")
-    offline_count = sum(1 for locker in lockers if locker.status == "offline")
-    unknown_count = sum(1 for locker in lockers if (locker.status or "unknown") == "unknown")
+    statuses = [effective_status(locker, timeout) for locker in lockers]
+    online_count = sum(1 for status in statuses if status == "online")
+    offline_count = sum(1 for status in statuses if status == "offline")
+    unknown_count = sum(1 for status in statuses if status == "unknown")
     return render_template(
         "status_page.html",
         lockers=lockers,
+        locker_statuses=dict(zip([locker.id for locker in lockers], statuses)),
+        presence_timeout_seconds=timeout,
         online_count=online_count,
         offline_count=offline_count,
         unknown_count=unknown_count,

@@ -15,7 +15,7 @@
 {% endblock %}
 {% block content %}
     <h1>Raspberry Pi / locker status</h1>
-    <p class="muted">Updated by n8n ping checks. Auto-refreshes every 30 seconds.</p>
+    <p class="muted">Updated when the Pico fetches inventory (check-in). Offline if no check-in for {{ presence_timeout_seconds }}s. Auto-refreshes every 30 seconds.</p>
     <div class="summary">
         <div class="summary-card"><span>Online</span><strong>{{ online_count }}</strong></div>
         <div class="summary-card"><span>Offline</span><strong>{{ offline_count }}</strong></div>
@@ -32,17 +32,18 @@
                     <th>Name</th>
                     <th>Locker ID</th>
                     <th>IP</th>
-                    <th>Last seen</th>
+                    <th>Last check-in</th>
                     <th>Last ping</th>
                 </tr>
             </thead>
             <tbody>
                 {% for locker in lockers %}
+                    {% set status = locker_statuses.get(locker.id, "unknown") %}
                     <tr>
                         <td>
-                            {% if locker.status == "online" %}
+                            {% if status == "online" %}
                                 <span class="badge badge-online">Online</span>
-                            {% elif locker.status == "offline" %}
+                            {% elif status == "offline" %}
                                 <span class="badge badge-offline">Offline</span>
                             {% else %}
                                 <span class="badge badge-unknown">Unknown</span>
