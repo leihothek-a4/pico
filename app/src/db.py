@@ -47,6 +47,9 @@ class Part(db.Model):
     item = db.Column(db.Integer, db.ForeignKey("item.id"))
     name = db.Column(db.Text)
     uid_hex = db.Column(db.String(32), nullable=True)
+    scanned_entries = db.relationship(
+        "ScannedPart", backref="part_ref", lazy="dynamic", cascade="all, delete-orphan"
+    )
 
     def __init__(self, item: Item | int, name: str, uid_hex: str | None = None):
         self.name = name

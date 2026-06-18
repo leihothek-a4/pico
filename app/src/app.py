@@ -308,5 +308,42 @@ def edit_part(part_id):
     )
 
 
+@app.route("/parts/<int:part_id>/delete", methods=["POST"])
+def delete_part(part_id):
+    part = db.session.get(Part, part_id)
+    if part is None:
+        flash("Part not found.")
+        return redirect(url_for("mainpage"))
+
+    name = part.name
+    db.session.delete(part)
+    db.session.commit()
+    flash(f'Part "{name}" removed.')
+    return redirect(url_for("mainpage"))
+
+
+@app.route("/parts/<int:part_id>/unscan", methods=["POST"])
+def unscan_part(part_id):
+    part = db.session.get(Part, part_id)
+    if part is None:
+        flash("Part not found.")
+        return redirect(url_for("contents"))
+
+    locker_id = request.form.get("locker_id", type=int)
+    if locker_id is None:
+        flash("Locker not specified.")
+        return redirect(url_for("contents"))
+
+    deleted = (
+        db.session.query(ScannedPart)
+        .filter_by(part_id=part_id, locker_id=locker_id)
+        .delete()
+    )
+    db.session.commit()
+    if deleted:
+        flash(f'"{part.name}" marked as not scanned.')
+    return redirect(url_for("contents"))
+
+
 if __name__ == "__main__":
     app.run(debug=True)

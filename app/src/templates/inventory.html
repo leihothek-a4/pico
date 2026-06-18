@@ -1,176 +1,212 @@
-{% extends "base.html" %}
-{% block title %}Inventory{% endblock %}
-{% block head %}
-    <meta http-equiv="refresh" content="2">
-    <style>
-        body {
-            max-width: 52rem;
-        }
-        .muted {
-            color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 1rem;
-        }
-        .inventory-locker {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 1rem;
-        }
-        .inventory-locker > summary {
-            padding: 12px 16px;
-            cursor: pointer;
-            font-weight: bold;
-            background: #2c3e50;
-            color: white;
-            list-style-position: inside;
-        }
-        .inventory-item {
-            border-top: 1px solid #e5e5e5;
-        }
-        .inventory-item > summary {
-            padding: 10px 16px;
-            cursor: pointer;
-            font-weight: 600;
-            background: #34495e;
-            color: white;
-            list-style-position: inside;
-            margin-left: 0;
-        }
-        .inventory-locker .item {
-            margin-left: 0;
-        }
-        .inventory-table-wrap {
-            padding: 0 0 0.5rem;
-        }
-        table.inventory-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            table-layout: fixed;
-        }
-        table.inventory-table th {
-            background: #42586f;
-            color: white;
-            padding: 10px 16px;
-            font-size: 0.85rem;
-        }
-        table.inventory-table th.col-part,
-        table.inventory-table th.col-uid,
-        table.inventory-table td.col-part,
-        table.inventory-table td.col-uid {
-            text-align: left;
-        }
-        table.inventory-table th.col-status,
-        table.inventory-table td.col-status {
-            text-align: center;
-            width: 5rem;
-        }
-        table.inventory-table th.col-part {
-            width: 35%;
-        }
-        table.inventory-table td {
-            padding: 10px 16px;
-            border-bottom: 1px solid #e5e5e5;
-            vertical-align: middle;
-        }
-        table.inventory-table td.col-part {
-            font-weight: 600;
-        }
-        table.inventory-table tr:hover {
-            background: #f8f9fb;
-        }
-        table.inventory-table tr.row-scanned {
-            background: #ecfdf5;
-        }
-        table.inventory-table tr.row-scanned:hover {
-            background: #d1fae5;
-        }
-        .uid {
-            font-family: ui-monospace, Menlo, Consolas, monospace;
-            font-size: 0.85rem;
-            color: #666;
-        }
-        .status-ok,
-        .status-missing,
-        .status-none {
-            font-size: 1.1rem;
-        }
-        .scan-count {
-            font-weight: normal;
-            opacity: 0.85;
-            font-size: 0.85rem;
-        }
-    </style>
-{% endblock %}
-{% block content %}
-    <h1>Inventory</h1>
-    <p class="muted">Live scan status per locker. Refreshes every 2 seconds.</p>
-    {% if not lockers %}
-        <p><em>No lockers yet.</em></p>
-    {% endif %}
-    {% for locker in lockers %}
-        {% set scanned = scanned_part_ids[locker.id] %}
-        <details open class="inventory-locker">
-            <summary>
-                {{ locker.name or ("Locker " ~ locker.id) }}
-                {% if locker.ip %}<span class="scan-count">· {{ locker.ip }}</span>{% endif %}
-            </summary>
-            {% if locker.intended_items.count() == 0 %}
-                <p style="padding: 1rem;"><em>No items in this locker.</em></p>
+{% extends "base.html" %} {% block title %}Inventory{% endblock %} {% block head
+%}
+<meta http-equiv="refresh" content="2" />
+<style>
+    body {
+        max-width: 52rem;
+    }
+    .muted {
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    .inventory-locker {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 1rem;
+    }
+    .inventory-locker > summary {
+        padding: 12px 16px;
+        cursor: pointer;
+        font-weight: bold;
+        background: #2c3e50;
+        color: white;
+        list-style-position: inside;
+    }
+    .inventory-item {
+        border-top: 1px solid #e5e5e5;
+    }
+    .inventory-item > summary {
+        padding: 10px 16px;
+        cursor: pointer;
+        font-weight: 600;
+        background: #34495e;
+        color: white;
+        list-style-position: inside;
+        margin-left: 0;
+    }
+    .inventory-locker .item {
+        margin-left: 0;
+    }
+    .inventory-table-wrap {
+        padding: 0 0 0.5rem;
+    }
+    table.inventory-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        table-layout: fixed;
+    }
+    table.inventory-table th {
+        background: #42586f;
+        color: white;
+        padding: 10px 16px;
+        font-size: 0.85rem;
+    }
+    table.inventory-table th.col-part,
+    table.inventory-table th.col-uid,
+    table.inventory-table td.col-part,
+    table.inventory-table td.col-uid {
+        text-align: left;
+    }
+    table.inventory-table th.col-status,
+    table.inventory-table td.col-status {
+        text-align: center;
+        width: 6rem;
+    }
+    table.inventory-table th.col-actions,
+    table.inventory-table td.col-actions {
+        text-align: center;
+        width: 6rem;
+    }
+    table.inventory-table th.col-part {
+        width: 35%;
+    }
+    table.inventory-table td {
+        padding: 10px 16px;
+        border-bottom: 1px solid #e5e5e5;
+        vertical-align: middle;
+    }
+    table.inventory-table td.col-part {
+        font-weight: 600;
+    }
+    table.inventory-table tr:hover {
+        background: #f8f9fb;
+    }
+    table.inventory-table tr.row-scanned {
+        background: #ecfdf5;
+    }
+    table.inventory-table tr.row-scanned:hover {
+        background: #d1fae5;
+    }
+    .uid {
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 0.85rem;
+        color: #666;
+    }
+    .status-ok,
+    .status-missing,
+    .status-none {
+        font-size: 1.1rem;
+    }
+    .scan-count {
+        font-weight: normal;
+        opacity: 0.85;
+        font-size: 0.85rem;
+    }
+    .btn-unscan {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+        cursor: pointer;
+    }
+    .status-cell {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.35rem;
+    }
+</style>
+{% endblock %} {% block content %}
+<h1>Inventory</h1>
+{% if not lockers %}
+<p><em>No lockers yet.</em></p>
+{% endif %} {% for locker in lockers %} {% set scanned =
+scanned_part_ids[locker.id] %}
+<details open class="inventory-locker">
+    <summary>
+        {{ locker.name or ("Locker " ~ locker.id) }} {% if locker.ip %}<span
+            class="scan-count"
+            >· {{ locker.ip }}</span
+        >{% endif %}
+    </summary>
+    {% if locker.intended_items.count() == 0 %}
+    <p style="padding: 1rem"><em>No items in this locker.</em></p>
+    {% endif %} {% for item in locker.intended_items %} {% set counts =
+    item_scan_counts.get(item.id, (0, 0)) %}
+    <details open class="inventory-item">
+        <summary class="item">
+            {{ item.name }} {% if counts[1] > 0 %}
+            <span class="scan-count"
+                >· {{ counts[0] }}/{{ counts[1] }} scanned</span
+            >
             {% endif %}
-            {% for item in locker.intended_items %}
-                {% set counts = item_scan_counts.get(item.id, (0, 0)) %}
-                <details open class="inventory-item">
-                    <summary class="item">
-                        {{ item.name }}
-                        {% if counts[1] > 0 %}
-                            <span class="scan-count">· {{ counts[0] }}/{{ counts[1] }} scanned</span>
-                        {% endif %}
-                    </summary>
-                    <div class="inventory-table-wrap">
-                        {% if item.parts.count() == 0 %}
-                            <p style="padding: 0.75rem 1rem;"><em>No parts.</em></p>
-                        {% else %}
-                            <table class="inventory-table">
-                                <thead>
-                                    <tr>
-                                        <th class="col-part">Part</th>
-                                        <th class="col-uid">UID</th>
-                                        <th class="col-status">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for part in item.parts %}
-                                        <tr class="{% if part.uid_hex and part.id in scanned %}row-scanned{% endif %}">
-                                            <td class="col-part">{{ part.name }}</td>
-                                            <td class="col-uid uid">
-                                                {% if part.uid_hex %}
-                                                    {{ format_uid_hex(part.uid_hex) }}
-                                                {% else %}
-                                                    —
-                                                {% endif %}
-                                            </td>
-                                            <td class="col-status">
-                                                {% if part.uid_hex %}
-                                                    {% if part.id in scanned %}
-                                                        <span class="status-ok" title="Scanned">🟢</span>
-                                                    {% else %}
-                                                        <span class="status-missing" title="Not scanned">🔴</span>
-                                                    {% endif %}
-                                                {% else %}
-                                                    <span class="status-none">—</span>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        {% endif %}
-                    </div>
-                </details>
-            {% endfor %}
-        </details>
+        </summary>
+        <div class="inventory-table-wrap">
+            {% if item.parts.count() == 0 %}
+            <p style="padding: 0.75rem 1rem"><em>No parts.</em></p>
+            {% else %}
+            <table class="inventory-table">
+                <thead>
+                    <tr>
+                        <th class="col-part">Part</th>
+                        <th class="col-uid">UID</th>
+                        <th class="col-status">Status</th>
+                        <th class="col-actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for part in item.parts %}
+                    <tr
+                        class="{% if part.uid_hex and part.id in scanned %}row-scanned{% endif %}"
+                    >
+                        <td class="col-part">{{ part.name }}</td>
+                        <td class="col-uid uid">
+                            {% if part.uid_hex %} {{
+                            format_uid_hex(part.uid_hex) }} {% else %} — {%
+                            endif %}
+                        </td>
+                        <td class="col-status">
+                            <div class="status-cell">
+                                {% if part.uid_hex %} {% if part.id in scanned
+                                %}
+                                <span class="status-ok" title="Scanned"
+                                    >🟢</span
+                                >
+                                {% else %}
+                                <span class="status-missing" title="Not scanned"
+                                    >🔴</span
+                                >
+                                {% endif %} {% else %}
+                                <span class="status-none">—</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="col-actions">
+                            {% if part.uid_hex and part.id in scanned %}
+                            <form
+                                method="post"
+                                action="{{ url_for('unscan_part', part_id=part.id) }}"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="locker_id"
+                                    value="{{ locker.id }}"
+                                />
+                                <button type="submit" class="btn-unscan">
+                                    Unscan
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+    </details>
     {% endfor %}
-{% endblock %}
+</details>
+{% endfor %} {% endblock %}
